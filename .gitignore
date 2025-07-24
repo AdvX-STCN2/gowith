@@ -192,3 +192,5 @@ ehthumbs.db
 Thumbs.db
 
 .temp/
+.env
+certificate.txt

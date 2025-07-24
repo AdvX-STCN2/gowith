@@ -46,9 +46,11 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'authentication.middleware.CasdoorCORSMiddleware',  # Casdoor CORS中间件
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'authentication.middleware.CasdoorTokenMiddleware',  # Casdoor Token中间件
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -145,10 +147,33 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20
 }
 
-# CasDoor settings
+# Casdoor settings
 CASDOOR_ENDPOINT = config('CASDOOR_ENDPOINT', default='http://localhost:8000')
 CASDOOR_CLIENT_ID = config('CASDOOR_CLIENT_ID', default='')
 CASDOOR_CLIENT_SECRET = config('CASDOOR_CLIENT_SECRET', default='')
+CASDOOR_CERTIFICATE_FILE = config('CASDOOR_CERTIFICATE_FILE', default='certificate.txt')
 CASDOOR_CERTIFICATE = config('CASDOOR_CERTIFICATE', default='')
 CASDOOR_ORGANIZATION_NAME = config('CASDOOR_ORGANIZATION_NAME', default='built-in')
 CASDOOR_APPLICATION_NAME = config('CASDOOR_APPLICATION_NAME', default='app-built-in')
+CASDOOR_FRONTEND_ENDPOINT = config('CASDOOR_FRONTEND_ENDPOINT', default='http://localhost:3000')
+
+# Casdoor中间件配置
+CASDOOR_SKIP_PATHS = [
+    '/admin/',
+    '/auth/login/',
+    '/auth/callback/',
+    '/auth/status/',
+    '/static/',
+    '/media/',
+]
+
+# CORS配置
+CASDOOR_CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
+
+# Session配置
+SESSION_COOKIE_AGE = 86400  # 24小时
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
