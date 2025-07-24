@@ -28,11 +28,3 @@ def GetLLMOutput(system_content,user_content,temperature=1):
     )
     return result.choices[0].message.content
 
-if __name__ == '__main__':
-    start_time=time.time()
-    system_content = "你是一个专业的翻译员，你只需要将用户给出的任何文字，翻译成中文，不需要任何解释"
-    user_content = "你好，我是张三"
-    output = GetLLMOutput(system_content,user_content)
-    print(output)
-    end_time=time.time()
-    print("耗时：",end_time-start_time)
