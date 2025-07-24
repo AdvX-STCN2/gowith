@@ -191,4 +191,6 @@ yarn-error.log*
 ehthumbs.db
 Thumbs.db
 
-.temp/
+# .temp/
+.env
+certificate.txt
