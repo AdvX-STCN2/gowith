@@ -5,7 +5,7 @@ description = "Default template for PDM package"
 authors = [
     {name = "STCN-2", email = "stcn2@smart-teach.cn"},
 ]
-dependencies = ["django>=5.2.4", "djangorestframework>=3.16.0", "djangorestframework-simplejwt>=5.5.1", "python-decouple>=3.8", "psycopg2-binary>=2.9.10"]
+dependencies = ["django>=5.2.4", "djangorestframework>=3.16.0", "python-decouple>=3.8", "psycopg2-binary>=2.9.10", "casdoor>=1.32.0"]
 requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "GPL3"}
