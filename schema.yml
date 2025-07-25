@@ -1,0 +1,2681 @@
+openapi: 3.0.3
+info:
+  title: GoWith API
+  version: 1.0.0
+  description: GoWith平台API文档 - 提供用户认证、活动管理、搭子匹配等功能
+paths:
+  /auth/login/:
+    get:
+      operationId: auth_login_retrieve
+      description: "生成Casdoor单点登录的授权URL。\n    \n    **功能说明：**\n    - 生成OAuth2授权链接\n\
+        \    - 用户访问此URL进行第三方登录\n    - 无需认证即可调用\n    "
+      summary: 获取Casdoor登录URL
+      tags:
+      - 用户认证
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  login_url:
+                    type: string
+                    example: https://casdoor.example.com/login/oauth/authorize?...
+                  message:
+                    type: string
+                    example: 请访问此URL进行登录
+          description: 成功生成登录URL
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    example: LOGIN_URL_GENERATION_ERROR
+          description: 生成登录URL失败
+  /auth/callback/:
+    get:
+      operationId: auth_callback_retrieve
+      description: "处理Casdoor OAuth2授权回调。\n    \n    **功能说明：**\n    - 接收OAuth2授权码\n\
+        \    - 获取访问令牌和用户信息\n    - 创建或更新Django用户\n    - 自动登录用户\n    - 重定向到前端页面\n  \
+        \  \n    **注意：** 此接口通常由Casdoor服务器调用，不需要手动调用\n    "
+      summary: Casdoor OAuth回调处理
+      tags:
+      - 用户认证
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '302':
+          description: 重定向到前端成功/错误页面
+        '500':
+          description: 服务器内部错误
+    post:
+      operationId: auth_callback_create
+      description: "处理Casdoor OAuth2授权回调。\n    \n    **功能说明：**\n    - 接收OAuth2授权码\n\
+        \    - 获取访问令牌和用户信息\n    - 创建或更新Django用户\n    - 自动登录用户\n    - 重定向到前端页面\n  \
+        \  \n    **注意：** 此接口通常由Casdoor服务器调用，不需要手动调用\n    "
+      summary: Casdoor OAuth回调处理
+      tags:
+      - 用户认证
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CasdoorCallbackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CasdoorCallbackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CasdoorCallbackRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '302':
+          description: 重定向到前端成功/错误页面
+        '500':
+          description: 服务器内部错误
+  /auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: "登出当前用户并清除会话信息。\n    \n    **功能说明：**\n    - 清除Casdoor会话信息\n   \
+        \ - 执行Django登出操作\n    - 允许未认证用户调用\n    "
+      summary: 用户登出
+      tags:
+      - 用户认证
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutResponseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutResponseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutResponseRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+          description: 登出成功
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: 登出失败
+  /auth/user/:
+    get:
+      operationId: auth_user_retrieve
+      description: "获取当前登录用户的详细信息。\n    \n    **权限要求：** 需要通过Casdoor认证\n    **返回信息：**\
+        \ 包含Django用户信息和Casdoor用户信息\n    "
+      summary: 获取当前用户信息
+      tags:
+      - 用户认证
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      username:
+                        type: string
+                      email:
+                        type: string
+                      first_name:
+                        type: string
+                      last_name:
+                        type: string
+                      is_staff:
+                        type: boolean
+                      is_superuser:
+                        type: boolean
+                      date_joined:
+                        type: string
+                        format: date-time
+                      last_login:
+                        type: string
+                        format: date-time
+                  casdoor_info:
+                    type: object
+                    description: Casdoor用户信息
+          description: 成功返回用户信息
+        '401':
+          description: 未认证
+        '500':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    example: USER_INFO_ERROR
+          description: 获取用户信息失败
+  /auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: "刷新Casdoor访问令牌。\n    \n    **权限要求：** 需要通过Casdoor认证\n    **功能说明：**\
+        \ 检查并刷新过期的访问令牌\n    "
+      summary: 刷新访问令牌
+      tags:
+      - 用户认证
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenResponseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenResponseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenResponseRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+          description: Token刷新成功
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Token刷新失败
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: 服务器内部错误
+  /auth/status/:
+    get:
+      operationId: auth_status_retrieve
+      description: "检查当前用户的认证状态。\n    \n    **功能说明：**\n    - 检查用户是否已通过Casdoor认证\n\
+        \    - 返回基本用户信息（如果已认证）\n    - 允许未认证用户调用\n    "
+      summary: 检查认证状态
+      tags:
+      - 用户认证
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStatusResponse'
+          description: 成功返回认证状态
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: 检查认证状态失败
+  /api/events/:
+    get:
+      operationId: events_list
+      description: "获取活动列表，支持多种过滤条件、搜索和排序功能。\n        \n        **过滤参数：**\n      \
+        \  - city: 按城市过滤\n        - is_online: 是否线上活动\n        - date_from/date_to:\
+        \ 日期范围过滤\n        - creator: 按创建者ID过滤\n        \n        **搜索字段：** title,\
+        \ description, location\n        **排序字段：** created_at, start_time, participant_count\n\
+        \        "
+      summary: 获取活动列表
+      parameters:
+      - in: query
+        name: city
+        schema:
+          type: string
+        description: 按城市过滤活动
+      - in: query
+        name: creator
+        schema:
+          type: integer
+        description: 按创建者用户ID过滤
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+        description: 按日期过滤（YYYY-MM-DD格式）
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: 活动开始日期过滤（格式：YYYY-MM-DD）
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: 活动结束日期过滤（格式：YYYY-MM-DD）
+      - in: query
+        name: is_online
+        schema:
+          type: boolean
+        description: 是否为线上活动（true=线上，false=线下）
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 排序字段（可选：created_at, start_time, participant_count，前加-表示倒序）
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: 搜索活动名称或介绍
+      tags:
+      - 活动管理
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEventListList'
+          description: 成功返回活动列表
+    post:
+      operationId: events_create
+      description: "创建新的活动。\n        \n        **权限要求：** 需要登录\n        **自动设置：** 创建者为当前登录用户\n\
+        \        "
+      summary: 创建活动
+      tags:
+      - 活动管理
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+          description: 活动创建成功
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 未登录
+  /api/events/{id}/:
+    get:
+      operationId: events_retrieve
+      description: 根据活动ID获取详细信息，包括参与者列表和搭子请求统计。
+      summary: 获取活动详情
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 活动.
+        required: true
+      tags:
+      - 活动管理
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+          description: 成功返回活动详情
+        '404':
+          description: 活动不存在
+    delete:
+      operationId: events_destroy
+      description: "删除活动。\n        \n        **权限要求：** 仅活动创建者可操作\n        **注意：**\
+        \ 删除活动会同时删除相关的搭子请求\n        "
+      summary: 删除活动
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 活动.
+        required: true
+      tags:
+      - 活动管理
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: 活动删除成功
+        '403':
+          description: 无权限操作
+        '404':
+          description: 活动不存在
+    patch:
+      operationId: events_partial_update
+      description: "部分更新活动信息。\n        \n        **权限要求：** 仅活动创建者可操作\n        "
+      summary: 部分更新活动
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 活动.
+        required: true
+      tags:
+      - 活动管理
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEventCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEventCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEventCreateRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+          description: 活动更新成功
+        '400':
+          description: 请求参数错误
+        '403':
+          description: 无权限操作
+        '404':
+          description: 活动不存在
+    put:
+      operationId: events_update
+      description: "完整更新活动信息。\n        \n        **权限要求：** 仅活动创建者可操作\n        "
+      summary: 更新活动
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 活动.
+        required: true
+      tags:
+      - 活动管理
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+          description: 活动更新成功
+        '400':
+          description: 请求参数错误
+        '403':
+          description: 无权限操作
+        '404':
+          description: 活动不存在
+  /api/events/{id}/buddy-requests/:
+    get:
+      operationId: events_buddy_requests_retrieve
+      description: "获取指定活动的所有搭子请求列表。\n        \n        **功能说明：**\n        - 返回该活动下所有的搭子请求\n\
+        \        - 包含请求者信息、状态、参与人数等\n        - 按创建时间倒序排列\n        "
+      summary: 获取活动的搭子请求
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 活动.
+        required: true
+      tags:
+      - 活动管理
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBuddyRequestSimpleList'
+          description: 成功返回搭子请求列表
+        '404':
+          description: 活动不存在
+  /api/profiles/:
+    get:
+      operationId: profiles_list
+      description: "获取当前用户的所有档案列表。\n        \n        **功能说明：**\n        - 仅返回当前登录用户的档案\n\
+        \        - 支持按活跃状态过滤\n        - 按创建时间倒序排列\n        "
+      summary: 获取用户档案列表
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: 按活跃状态过滤（true=活跃，false=非活跃）
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - 用户档案
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserProfileList'
+          description: 成功返回档案列表
+        '401':
+          description: 未登录
+    post:
+      operationId: profiles_create
+      description: "创建新的用户档案。\n        \n        **权限要求：** 需要登录\n        **自动设置：**\
+        \ 用户为当前登录用户\n        **主档案逻辑：** 如果是用户的第一个档案，自动设为主档案\n        "
+      summary: 创建用户档案
+      tags:
+      - 用户档案
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: 档案创建成功
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 未登录
+  /api/profiles/{id}/:
+    get:
+      operationId: profiles_retrieve
+      description: "获取指定档案的详细信息。\n        \n        **权限要求：** 仅档案所有者可查看\n        "
+      summary: 获取档案详情
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 档案ID
+        required: true
+      tags:
+      - 用户档案
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: 成功返回档案详情
+        '403':
+          description: 无权限访问
+        '404':
+          description: 档案不存在
+    delete:
+      operationId: profiles_destroy
+      description: "删除档案。\n        \n        **权限要求：** 仅档案所有者可操作\n        **注意：**\
+        \ 无法删除主档案，需先设置其他档案为主档案\n        "
+      summary: 删除档案
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 档案ID
+        required: true
+      tags:
+      - 用户档案
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: 档案删除成功
+        '400':
+          description: 无法删除主档案
+        '403':
+          description: 无权限操作
+        '404':
+          description: 档案不存在
+    patch:
+      operationId: profiles_partial_update
+      description: "部分更新档案信息。\n        \n        **权限要求：** 仅档案所有者可操作\n        "
+      summary: 部分更新档案
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 档案ID
+        required: true
+      tags:
+      - 用户档案
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileCreateRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: 档案更新成功
+        '400':
+          description: 请求参数错误
+        '403':
+          description: 无权限操作
+        '404':
+          description: 档案不存在
+    put:
+      operationId: profiles_update
+      description: "完整更新档案信息。\n        \n        **权限要求：** 仅档案所有者可操作\n        "
+      summary: 更新档案
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 档案ID
+        required: true
+      tags:
+      - 用户档案
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfileCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: 档案更新成功
+        '400':
+          description: 请求参数错误
+        '403':
+          description: 无权限操作
+        '404':
+          description: 档案不存在
+  /api/profiles/{id}/set-primary/:
+    post:
+      operationId: profiles_set_primary_create
+      description: "将指定档案设置为主档案。\n        \n        **功能说明：**\n        - 将当前档案设为主档案\n\
+        \        - 自动取消其他档案的主档案状态\n        - 每个用户只能有一个主档案\n        \n        **权限要求：**\
+        \ 仅档案所有者可操作\n        "
+      summary: 设置主档案
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 用户档案.
+        required: true
+      tags:
+      - 用户档案
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: 主档案设置成功
+        '403':
+          description: 无权限操作
+        '404':
+          description: 档案不存在
+  /api/requests/:
+    get:
+      operationId: requests_list
+      description: "获取搭子请求列表，支持多种过滤条件、搜索和排序功能。\n        \n        **过滤参数：**\n    \
+        \    - activity_type: 按活动类型过滤\n        - status: 按状态过滤（open, matched, expired,\
+        \ cancelled）\n        - event: 按活动ID过滤\n        - has_space: 是否有空位\n     \
+        \   - tags: 按标签过滤\n        \n        **搜索字段：** description, activity_type\n\
+        \        **排序字段：** start_time, created_at, max_participants\n        "
+      summary: 获取搭子请求列表
+      parameters:
+      - in: query
+        name: activity_type
+        schema:
+          type: string
+        description: 按活动类型过滤
+      - in: query
+        name: city
+        schema:
+          type: string
+        description: 按城市过滤
+      - in: query
+        name: end_date
+        schema:
+          type: string
+          format: date
+        description: 结束日期（到此日期结束）
+      - in: query
+        name: event
+        schema:
+          type: integer
+        description: 按活动ID过滤
+      - in: query
+        name: has_space
+        schema:
+          type: boolean
+        description: 是否有空位（true=有空位，false=已满员）
+      - in: query
+        name: max_participants
+        schema:
+          type: integer
+        description: 按最大参与人数过滤
+      - in: query
+        name: max_participants_gte
+        schema:
+          type: integer
+        description: 最大参与人数大于等于
+      - in: query
+        name: max_participants_lte
+        schema:
+          type: integer
+        description: 最大参与人数小于等于
+      - in: query
+        name: ordering
+        schema:
+          type: string
+        description: 排序字段（可选：start_time, created_at, max_participants，前加-表示倒序）
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: profile
+        schema:
+          type: integer
+        description: 按档案ID过滤
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: 搜索关键词（在描述和活动类型中搜索）
+      - in: query
+        name: start_date
+        schema:
+          type: string
+          format: date
+        description: 开始日期（从此日期开始）
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - cancelled
+          - expired
+          - matched
+          - open
+        description: 按状态过滤
+      - in: query
+        name: tags
+        schema:
+          type: string
+        description: 按标签过滤（多个标签用逗号分隔）
+      - in: query
+        name: user
+        schema:
+          type: integer
+        description: 按用户ID过滤
+      tags:
+      - 搭子匹配
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBuddyRequestListList'
+          description: 成功返回搭子请求列表
+    post:
+      operationId: requests_create
+      description: "创建新的搭子请求，系统将自动启动匹配流程。\n        \n        **权限要求：** 需要登录\n    \
+        \    **自动设置：** 用户为当前登录用户\n        **异步处理：** 创建成功后会启动后台匹配任务\n        "
+      summary: 创建搭子请求
+      tags:
+      - 搭子匹配
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddyRequestCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BuddyRequestCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BuddyRequestCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id:
+                    type: integer
+                  status_url:
+                    type: string
+          description: 搭子请求创建成功，匹配任务已启动
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 未登录
+  /api/requests/{id}/:
+    get:
+      operationId: requests_retrieve
+      description: 根据ID获取搭子请求详细信息，包括匹配状态和参与者信息。
+      summary: 获取搭子请求详情
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 搭子请求.
+        required: true
+      tags:
+      - 搭子匹配
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuddyRequest'
+          description: 成功返回搭子请求详情
+        '404':
+          description: 搭子请求不存在
+    delete:
+      operationId: requests_destroy
+      description: "删除搭子请求。\n        \n        **权限要求：** 仅请求创建者可操作\n        **注意：**\
+        \ 删除请求会同时删除相关的匹配记录\n        "
+      summary: 删除搭子请求
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 搭子请求.
+        required: true
+      tags:
+      - 搭子匹配
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: 搭子请求删除成功
+        '403':
+          description: 无权限操作
+        '404':
+          description: 搭子请求不存在
+    patch:
+      operationId: requests_partial_update
+      description: "部分更新搭子请求信息。\n        \n        **权限要求：** 仅请求创建者可操作\n        **注意：**\
+        \ 更新后会重新启动匹配流程\n        "
+      summary: 部分更新搭子请求
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 搭子请求.
+        required: true
+      tags:
+      - 搭子匹配
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBuddyRequestCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBuddyRequestCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBuddyRequestCreateRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuddyRequest'
+          description: 搭子请求更新成功
+        '400':
+          description: 请求参数错误
+        '403':
+          description: 无权限操作
+        '404':
+          description: 搭子请求不存在
+    put:
+      operationId: requests_update
+      description: "完整更新搭子请求信息。\n        \n        **权限要求：** 仅请求创建者可操作\n        **注意：**\
+        \ 更新后会重新启动匹配流程\n        "
+      summary: 更新搭子请求
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 搭子请求.
+        required: true
+      tags:
+      - 搭子匹配
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuddyRequestCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BuddyRequestCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BuddyRequestCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuddyRequest'
+          description: 搭子请求更新成功
+        '400':
+          description: 请求参数错误
+        '403':
+          description: 无权限操作
+        '404':
+          description: 搭子请求不存在
+  /api/requests/{id}/matches/:
+    get:
+      operationId: requests_matches_retrieve
+      description: "获取搭子请求的最终匹配结果。\n        \n        **功能说明：**\n        - 返回该搭子请求的所有匹配记录\n\
+        \        - 包含匹配用户信息和匹配分数\n        - 按匹配分数降序排列\n        \n        **权限要求：**\
+        \ 需要登录\n        **返回数据：** 匹配用户列表，包含用户信息、匹配分数、匹配状态等\n        "
+      summary: 获取最终匹配结果
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 搭子请求.
+        required: true
+      tags:
+      - 搭子匹配
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBuddyMatchList'
+          description: 成功返回匹配结果列表
+        '404':
+          description: 搭子请求不存在
+  /api/requests/{id}/status/:
+    get:
+      operationId: requests_status_retrieve
+      description: "查询搭子请求的匹配处理状态和进度。\n        \n        **功能说明：**\n        - 返回匹配任务的当前状态\n\
+        \        - 包含匹配进度和结果信息\n        - 支持实时状态查询\n        \n        **状态说明：**\n\
+        \        - pending: 等待处理\n        - processing: 匹配中\n        - done: 匹配完成\n\
+        \        - failed: 匹配失败\n        "
+      summary: 查询匹配处理状态
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 搭子请求.
+        required: true
+      tags:
+      - 搭子匹配
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchStatus'
+          description: 成功返回匹配状态
+        '404':
+          description: 搭子请求不存在
+  /api/matches/:
+    get:
+      operationId: matches_list
+      description: 获取当前用户相关的匹配结果
+      summary: 获取匹配结果列表
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: request
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          x-spec-enum-id: c837192a2993e6d9
+          enum:
+          - accepted
+          - pending
+          - rejected
+        description: |-
+          匹配状态
+
+          * `pending` - 待确认
+          * `accepted` - 已接受
+          * `rejected` - 已拒绝
+      tags:
+      - matches
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBuddyMatchList'
+          description: ''
+  /api/matches/{id}/:
+    get:
+      operationId: matches_retrieve
+      description: 获取指定匹配的详细信息
+      summary: 获取匹配详情
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 匹配ID
+        required: true
+      tags:
+      - matches
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuddyMatch'
+          description: 成功返回匹配详情
+        '404':
+          description: 匹配不存在
+  /api/feedback/:
+    get:
+      operationId: feedback_list
+      description: 获取当前用户的反馈记录
+      summary: 获取用户反馈列表
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: rating
+        schema:
+          type: integer
+          x-spec-enum-id: 22febdc49c8582ae
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+        description: |-
+          评分（1-5星）
+
+          * `1` - 1星
+          * `2` - 2星
+          * `3` - 3星
+          * `4` - 4星
+          * `5` - 5星
+      tags:
+      - feedback
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserFeedbackList'
+          description: ''
+    post:
+      operationId: feedback_create
+      description: 对匹配的用户进行评价反馈
+      summary: 创建用户反馈
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserFeedbackRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserFeedbackRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserFeedbackRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFeedback'
+          description: 反馈创建成功
+        '400':
+          description: 请求参数错误
+  /api/feedback/{id}/:
+    get:
+      operationId: feedback_retrieve
+      description: 获取指定反馈的详细信息
+      summary: 获取反馈详情
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: 反馈ID
+        required: true
+      tags:
+      - feedback
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserFeedback'
+          description: 成功返回反馈详情
+        '404':
+          description: 反馈不存在
+  /api/tags/:
+    get:
+      operationId: tags_list
+      description: 获取所有可用的搭子请求标签
+      summary: 获取搭子请求标签列表
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - tags
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBuddyRequestTagList'
+          description: ''
+  /api/tags/{id}/:
+    get:
+      operationId: tags_retrieve
+      description: 搭子请求标签视图集（只读）
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this 搭子请求标签.
+        required: true
+      tags:
+      - tags
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuddyRequestTag'
+          description: ''
+components:
+  schemas:
+    Address:
+      type: object
+      description: 地址序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: 地址ID
+        country:
+          type: string
+          default: 中国
+          description: 国家
+          maxLength: 50
+        province:
+          type: string
+          description: 省份/州
+          maxLength: 50
+        city:
+          type: string
+          description: 城市
+          maxLength: 50
+        district:
+          type: string
+          nullable: true
+          description: 区/县
+          maxLength: 50
+        detailed_address:
+          type: string
+          nullable: true
+          description: 详细地址
+          maxLength: 200
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,7})?$
+          nullable: true
+          description: 纬度
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,7})?$
+          nullable: true
+          description: 经度
+      required:
+      - city
+      - id
+      - province
+    AuthStatusResponse:
+      type: object
+      description: 认证状态响应序列化器
+      properties:
+        status:
+          type: string
+          description: 响应状态
+        authenticated:
+          type: boolean
+          description: 是否已认证
+        user:
+          allOf:
+          - $ref: '#/components/schemas/UserInfo'
+          description: 用户信息
+      required:
+      - authenticated
+      - status
+    BuddyMatch:
+      type: object
+      description: 搭子匹配结果序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: 匹配ID
+        request:
+          type: integer
+          description: 搭子请求ID
+        request_description:
+          type: string
+          readOnly: true
+        matched_user:
+          type: integer
+          description: 匹配用户ID
+        matched_user_name:
+          type: string
+          readOnly: true
+        status:
+          enum:
+          - pending
+          - accepted
+          - rejected
+          type: string
+          x-spec-enum-id: c837192a2993e6d9
+          description: |-
+            匹配状态
+
+            * `pending` - 待确认
+            * `accepted` - 已接受
+            * `rejected` - 已拒绝
+        matched_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - matched_at
+      - matched_user
+      - matched_user_name
+      - request
+      - request_description
+      - updated_at
+    BuddyRequest:
+      type: object
+      description: 搭子请求详情序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        profile:
+          type: integer
+          nullable: true
+          description: 使用的用户档案
+        profile_name:
+          type: string
+          readOnly: true
+        profile_location:
+          type: string
+          description: 获取档案地址信息
+          readOnly: true
+        event:
+          type: integer
+        event_name:
+          type: string
+          readOnly: true
+        activity_type:
+          type: string
+          description: 活动类型
+          maxLength: 100
+        description:
+          type: string
+          description: 描述
+        start_time:
+          type: string
+          format: date-time
+          description: 开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 结束时间
+        max_participants:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 最大参与人数
+        current_participants:
+          type: integer
+          description: 获取当前参与人数
+          readOnly: true
+        is_full:
+          type: boolean
+          description: 判断是否已满员
+          readOnly: true
+        status:
+          enum:
+          - open
+          - closed
+          type: string
+          x-spec-enum-id: 373379432a637e55
+          description: |-
+            状态
+
+            * `open` - 开放
+            * `closed` - 关闭
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyRequestTag'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - activity_type
+      - created_at
+      - current_participants
+      - description
+      - end_time
+      - event
+      - event_name
+      - id
+      - is_full
+      - max_participants
+      - profile_location
+      - profile_name
+      - start_time
+      - tags
+      - updated_at
+      - user
+      - user_name
+    BuddyRequestCreateRequest:
+      type: object
+      description: 搭子请求创建序列化器
+      properties:
+        profile:
+          type: integer
+          description: 使用的用户档案ID（不指定则使用主档案）
+        event:
+          type: integer
+          description: 活动ID
+        activity_type:
+          type: string
+          minLength: 1
+          description: 活动类型
+          maxLength: 100
+        description:
+          type: string
+          minLength: 1
+          description: 搭子请求描述
+        start_time:
+          type: string
+          format: date-time
+          description: 期望开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 期望结束时间
+        max_participants:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 最大参与人数
+        tags:
+          type: array
+          items:
+            type: integer
+          description: 标签ID列表
+      required:
+      - activity_type
+      - description
+      - end_time
+      - event
+      - max_participants
+      - start_time
+    BuddyRequestList:
+      type: object
+      description: 搭子请求列表序列化器（简化版）
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        profile_name:
+          type: string
+          readOnly: true
+        profile_location:
+          type: string
+          description: 获取档案地址信息
+          readOnly: true
+        event_name:
+          type: string
+          readOnly: true
+        activity_type:
+          type: string
+          description: 活动类型
+          maxLength: 100
+        description:
+          type: string
+          description: 描述
+        start_time:
+          type: string
+          format: date-time
+          description: 开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 结束时间
+        max_participants:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 最大参与人数
+        current_participants:
+          type: integer
+          readOnly: true
+        is_full:
+          type: boolean
+          readOnly: true
+        status:
+          enum:
+          - open
+          - closed
+          type: string
+          x-spec-enum-id: 373379432a637e55
+          description: |-
+            状态
+
+            * `open` - 开放
+            * `closed` - 关闭
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyRequestTag'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - activity_type
+      - created_at
+      - current_participants
+      - description
+      - end_time
+      - event_name
+      - id
+      - is_full
+      - max_participants
+      - profile_location
+      - profile_name
+      - start_time
+      - tags
+      - user_name
+    BuddyRequestSimple:
+      type: object
+      description: 搭子请求简化序列化器（用于事件详情）
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        activity_type:
+          type: string
+          description: 活动类型
+          maxLength: 100
+        description:
+          type: string
+          description: 描述
+        start_time:
+          type: string
+          format: date-time
+          description: 开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 结束时间
+        max_participants:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 最大参与人数
+        current_participants:
+          type: integer
+          readOnly: true
+        status:
+          enum:
+          - open
+          - closed
+          type: string
+          x-spec-enum-id: 373379432a637e55
+          description: |-
+            状态
+
+            * `open` - 开放
+            * `closed` - 关闭
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - activity_type
+      - created_at
+      - current_participants
+      - description
+      - end_time
+      - id
+      - max_participants
+      - start_time
+      - user_name
+    BuddyRequestTag:
+      type: object
+      description: 搭子请求标签序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: 标签ID
+        tag_name:
+          type: string
+          description: 标签名称
+          maxLength: 50
+      required:
+      - id
+      - tag_name
+    CasdoorCallbackRequest:
+      type: object
+      description: Casdoor OAuth回调序列化器
+      properties:
+        code:
+          type: string
+          minLength: 1
+          description: OAuth2授权码
+        state:
+          type: string
+          description: 状态参数
+      required:
+      - code
+    ErrorResponse:
+      type: object
+      description: 错误响应序列化器
+      properties:
+        status:
+          type: string
+          description: 响应状态
+        message:
+          type: string
+          description: 错误消息
+        code:
+          type: string
+          description: 错误代码
+      required:
+      - message
+      - status
+    Event:
+      type: object
+      description: 活动详情序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: 活动ID
+        name:
+          type: string
+          description: 活动名称
+          maxLength: 200
+        start_time:
+          type: string
+          format: date-time
+          description: 活动开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 活动结束时间
+        location:
+          type: integer
+          nullable: true
+          description: 活动地点ID（如果是线下活动）
+        location_detail:
+          allOf:
+          - $ref: '#/components/schemas/Address'
+          readOnly: true
+          description: 活动地点详细信息
+        is_online:
+          type: boolean
+          description: 是否为线上活动
+        logo_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 活动Logo图片URL（可选）
+          maxLength: 200
+        banner_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 活动横幅图片URL（可选）
+          maxLength: 200
+        introduction:
+          type: string
+          nullable: true
+          description: 活动介绍和描述（可选）
+        creator:
+          type: integer
+          readOnly: true
+          description: 活动创建者
+        creator_name:
+          type: string
+          readOnly: true
+          description: 活动创建者用户名
+        participant_count:
+          type: integer
+          description: 参与者数量（基于搭子请求）
+          readOnly: true
+        buddy_requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyRequestSimple'
+          readOnly: true
+          description: 该活动的搭子请求列表
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - buddy_requests
+      - created_at
+      - creator
+      - creator_name
+      - end_time
+      - id
+      - location_detail
+      - name
+      - participant_count
+      - start_time
+    EventCreateRequest:
+      type: object
+      description: 活动创建序列化器
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: 活动名称
+          maxLength: 200
+        start_time:
+          type: string
+          format: date-time
+          description: 活动开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 活动结束时间
+        location:
+          type: integer
+          nullable: true
+          description: 活动地点ID（如果是线下活动）
+        is_online:
+          type: boolean
+          description: 是否为线上活动
+        logo_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 活动Logo图片URL（可选）
+          maxLength: 200
+        banner_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 活动横幅图片URL（可选）
+          maxLength: 200
+        introduction:
+          type: string
+          nullable: true
+          description: 活动介绍和描述（可选）
+      required:
+      - end_time
+      - name
+      - start_time
+    EventList:
+      type: object
+      description: 活动列表序列化器（简化版）
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: 活动ID
+        name:
+          type: string
+          description: 活动名称
+          maxLength: 200
+        start_time:
+          type: string
+          format: date-time
+          description: 活动开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 活动结束时间
+        location_city:
+          type: string
+          readOnly: true
+          description: 活动所在城市
+        is_online:
+          type: boolean
+          description: 是否为线上活动
+        logo_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 活动Logo图片URL
+          maxLength: 200
+        creator_name:
+          type: string
+          readOnly: true
+          description: 活动创建者用户名
+        participant_count:
+          type: integer
+          description: 参与者数量
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 创建时间
+      required:
+      - created_at
+      - creator_name
+      - end_time
+      - id
+      - location_city
+      - name
+      - participant_count
+      - start_time
+    LogoutResponse:
+      type: object
+      description: 登出响应序列化器
+      properties:
+        status:
+          type: string
+          description: 响应状态
+        message:
+          type: string
+          description: 响应消息
+      required:
+      - message
+      - status
+    LogoutResponseRequest:
+      type: object
+      description: 登出响应序列化器
+      properties:
+        status:
+          type: string
+          minLength: 1
+          description: 响应状态
+        message:
+          type: string
+          minLength: 1
+          description: 响应消息
+      required:
+      - message
+      - status
+    MatchStatus:
+      type: object
+      description: 匹配状态序列化器
+      properties:
+        request_id:
+          type: integer
+          description: 搭子请求ID
+        status:
+          type: string
+          description: 处理状态
+        progress:
+          type: integer
+          description: 处理进度（百分比）
+        message:
+          type: string
+          description: 状态消息
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyMatch'
+          description: 匹配结果列表
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+      required:
+      - created_at
+      - progress
+      - request_id
+      - status
+      - updated_at
+    PaginatedBuddyMatchList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyMatch'
+    PaginatedBuddyRequestListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyRequestList'
+    PaginatedBuddyRequestSimpleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyRequestSimple'
+    PaginatedBuddyRequestTagList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyRequestTag'
+    PaginatedEventListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventList'
+    PaginatedUserFeedbackList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserFeedback'
+    PaginatedUserProfileList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProfile'
+    PatchedBuddyRequestCreateRequest:
+      type: object
+      description: 搭子请求创建序列化器
+      properties:
+        profile:
+          type: integer
+          description: 使用的用户档案ID（不指定则使用主档案）
+        event:
+          type: integer
+          description: 活动ID
+        activity_type:
+          type: string
+          minLength: 1
+          description: 活动类型
+          maxLength: 100
+        description:
+          type: string
+          minLength: 1
+          description: 搭子请求描述
+        start_time:
+          type: string
+          format: date-time
+          description: 期望开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 期望结束时间
+        max_participants:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: 最大参与人数
+        tags:
+          type: array
+          items:
+            type: integer
+          description: 标签ID列表
+    PatchedEventCreateRequest:
+      type: object
+      description: 活动创建序列化器
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: 活动名称
+          maxLength: 200
+        start_time:
+          type: string
+          format: date-time
+          description: 活动开始时间
+        end_time:
+          type: string
+          format: date-time
+          description: 活动结束时间
+        location:
+          type: integer
+          nullable: true
+          description: 活动地点ID（如果是线下活动）
+        is_online:
+          type: boolean
+          description: 是否为线上活动
+        logo_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 活动Logo图片URL（可选）
+          maxLength: 200
+        banner_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 活动横幅图片URL（可选）
+          maxLength: 200
+        introduction:
+          type: string
+          nullable: true
+          description: 活动介绍和描述（可选）
+    PatchedUserProfileCreateRequest:
+      type: object
+      description: 用户档案创建序列化器
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: 档案名称
+          maxLength: 20
+        phone:
+          type: string
+          nullable: true
+          description: 联系电话（可选）
+          maxLength: 15
+        contact_info:
+          type: string
+          nullable: true
+          description: 联系方式（微信、QQ、邮箱等）
+        mbti:
+          type: string
+          nullable: true
+          description: MBTI性格类型（可选）
+          maxLength: 8
+        bio:
+          type: string
+          nullable: true
+          description: 个人简介（可选）
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 头像URL（可选）
+          maxLength: 200
+        address:
+          type: integer
+          nullable: true
+          description: 地址ID（可选，与address_data二选一）
+        address_data:
+          allOf:
+          - $ref: '#/components/schemas/ProfileAddressRequest'
+          writeOnly: true
+          description: 地址信息
+        is_primary:
+          type: boolean
+          description: 是否为主档案
+    ProfileAddress:
+      type: object
+      description: 档案地址序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: 地址ID
+        country:
+          type: string
+          default: 中国
+          description: 国家
+          maxLength: 50
+        province:
+          type: string
+          description: 省份/州
+          maxLength: 50
+        city:
+          type: string
+          description: 城市
+          maxLength: 50
+        district:
+          type: string
+          nullable: true
+          description: 区/县
+          maxLength: 50
+        detailed_address:
+          type: string
+          nullable: true
+          description: 详细地址
+          maxLength: 200
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,7})?$
+          nullable: true
+          description: 纬度
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,7})?$
+          nullable: true
+          description: 经度
+      required:
+      - city
+      - id
+      - province
+    ProfileAddressRequest:
+      type: object
+      description: 档案地址序列化器
+      properties:
+        country:
+          type: string
+          minLength: 1
+          default: 中国
+          description: 国家
+          maxLength: 50
+        province:
+          type: string
+          minLength: 1
+          description: 省份/州
+          maxLength: 50
+        city:
+          type: string
+          minLength: 1
+          description: 城市
+          maxLength: 50
+        district:
+          type: string
+          nullable: true
+          description: 区/县
+          maxLength: 50
+        detailed_address:
+          type: string
+          nullable: true
+          description: 详细地址
+          maxLength: 200
+        latitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,7})?$
+          nullable: true
+          description: 纬度
+        longitude:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,7})?$
+          nullable: true
+          description: 经度
+      required:
+      - city
+      - province
+    RefreshTokenResponse:
+      type: object
+      description: 刷新令牌响应序列化器
+      properties:
+        status:
+          type: string
+          description: 响应状态
+        message:
+          type: string
+          description: 响应消息
+        access_token:
+          type: string
+          description: 访问令牌
+      required:
+      - message
+      - status
+    RefreshTokenResponseRequest:
+      type: object
+      description: 刷新令牌响应序列化器
+      properties:
+        status:
+          type: string
+          minLength: 1
+          description: 响应状态
+        message:
+          type: string
+          minLength: 1
+          description: 响应消息
+        access_token:
+          type: string
+          minLength: 1
+          description: 访问令牌
+      required:
+      - message
+      - status
+    UserFeedback:
+      type: object
+      description: 用户反馈序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: 反馈ID
+        from_user:
+          type: integer
+          readOnly: true
+        from_user_name:
+          type: string
+          readOnly: true
+        to_user:
+          type: integer
+          description: 被评价用户ID
+        to_user_name:
+          type: string
+          readOnly: true
+        rating:
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          type: integer
+          x-spec-enum-id: 22febdc49c8582ae
+          description: |-
+            评分（1-5分）
+
+            * `1` - 1星
+            * `2` - 2星
+            * `3` - 3星
+            * `4` - 4星
+            * `5` - 5星
+          minimum: 0
+          maximum: 32767
+        comment:
+          type: string
+          nullable: true
+          description: 评价内容
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - from_user
+      - from_user_name
+      - id
+      - rating
+      - to_user
+      - to_user_name
+    UserFeedbackRequest:
+      type: object
+      description: 用户反馈序列化器
+      properties:
+        to_user:
+          type: integer
+          description: 被评价用户ID
+        rating:
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          type: integer
+          x-spec-enum-id: 22febdc49c8582ae
+          description: |-
+            评分（1-5分）
+
+            * `1` - 1星
+            * `2` - 2星
+            * `3` - 3星
+            * `4` - 4星
+            * `5` - 5星
+          minimum: 0
+          maximum: 32767
+        comment:
+          type: string
+          nullable: true
+          description: 评价内容
+      required:
+      - rating
+      - to_user
+    UserInfo:
+      type: object
+      description: 用户信息序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          title: 用户名
+          description: 必填；长度为150个字符或以下；只能包含字母、数字、特殊字符“@”、“.”、“-”和“_”。
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: 电子邮件地址
+        first_name:
+          type: string
+          readOnly: true
+          title: 名字
+        last_name:
+          type: string
+          readOnly: true
+          title: 姓氏
+        is_staff:
+          type: boolean
+          readOnly: true
+          title: 工作人员状态
+          description: 指明用户是否可以登录到这个管理站点。
+        is_superuser:
+          type: boolean
+          readOnly: true
+          title: 超级用户状态
+          description: 指明该用户缺省拥有所有权限。
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - date_joined
+      - email
+      - first_name
+      - id
+      - is_staff
+      - is_superuser
+      - last_login
+      - last_name
+      - username
+    UserProfile:
+      type: object
+      description: 用户档案序列化器
+      properties:
+        id:
+          type: integer
+          readOnly: true
+          description: 档案ID
+        user:
+          type: integer
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+          description: 用户名
+        name:
+          type: string
+          description: 档案名称
+          maxLength: 20
+        phone:
+          type: string
+          nullable: true
+          description: 联系电话（可选）
+          maxLength: 15
+        contact_info:
+          type: string
+          nullable: true
+          description: 联系方式（微信、QQ、邮箱等）
+        mbti:
+          type: string
+          nullable: true
+          description: MBTI性格类型（可选）
+          maxLength: 8
+        bio:
+          type: string
+          nullable: true
+          description: 个人简介（可选）
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 头像URL（可选）
+          maxLength: 200
+        address:
+          type: integer
+          nullable: true
+          description: 地址ID
+        address_detail:
+          allOf:
+          - $ref: '#/components/schemas/ProfileAddress'
+          readOnly: true
+          description: 地址详细信息
+        location_display:
+          type: string
+          description: 地址显示
+          readOnly: true
+        is_active:
+          type: boolean
+          description: 是否激活
+        is_primary:
+          type: boolean
+          description: 是否为主档案
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address_detail
+      - created_at
+      - id
+      - location_display
+      - name
+      - updated_at
+      - user
+      - user_name
+    UserProfileCreateRequest:
+      type: object
+      description: 用户档案创建序列化器
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: 档案名称
+          maxLength: 20
+        phone:
+          type: string
+          nullable: true
+          description: 联系电话（可选）
+          maxLength: 15
+        contact_info:
+          type: string
+          nullable: true
+          description: 联系方式（微信、QQ、邮箱等）
+        mbti:
+          type: string
+          nullable: true
+          description: MBTI性格类型（可选）
+          maxLength: 8
+        bio:
+          type: string
+          nullable: true
+          description: 个人简介（可选）
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 头像URL（可选）
+          maxLength: 200
+        address:
+          type: integer
+          nullable: true
+          description: 地址ID（可选，与address_data二选一）
+        address_data:
+          allOf:
+          - $ref: '#/components/schemas/ProfileAddressRequest'
+          writeOnly: true
+          description: 地址信息
+        is_primary:
+          type: boolean
+          description: 是否为主档案
+      required:
+      - name
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
