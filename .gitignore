@@ -192,5 +192,7 @@ ehthumbs.db
 Thumbs.db
 
 .temp/
-.env
+.temp/*
+.env.example
 certificate.txt
+.temp/项目需求.md
