@@ -8,12 +8,58 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 
 from .casdoor_config import CasdoorConfig
 from .casdoor_utils import CasdoorUtils, casdoor_login_required
+from .serializers import (
+    CasdoorCallbackSerializer,
+    LogoutResponseSerializer,
+    RefreshTokenResponseSerializer,
+    AuthStatusResponseSerializer,
+    ErrorResponseSerializer
+)
 
 logger = logging.getLogger(__name__)
 
+@extend_schema(
+    summary="获取Casdoor登录URL",
+    description="""生成Casdoor单点登录的授权URL。
+    
+    **功能说明：**
+    - 生成OAuth2授权链接
+    - 用户访问此URL进行第三方登录
+    - 无需认证即可调用
+    """,
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'status': {'type': 'string', 'example': 'ok'},
+                    'login_url': {'type': 'string', 'example': 'https://casdoor.example.com/login/oauth/authorize?...'},
+                    'message': {'type': 'string', 'example': '请访问此URL进行登录'}
+                }
+            },
+            description="成功生成登录URL"
+        ),
+        500: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'status': {'type': 'string', 'example': 'error'},
+                    'message': {'type': 'string'},
+                    'code': {'type': 'string', 'example': 'LOGIN_URL_GENERATION_ERROR'}
+                }
+            },
+            description="生成登录URL失败"
+        )
+    },
+    tags=['用户认证']
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def casdoor_login(request):
@@ -45,6 +91,26 @@ def casdoor_login(request):
             'code': 'LOGIN_URL_GENERATION_ERROR'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@extend_schema(
+    summary="Casdoor OAuth回调处理",
+    description="""处理Casdoor OAuth2授权回调。
+    
+    **功能说明：**
+    - 接收OAuth2授权码
+    - 获取访问令牌和用户信息
+    - 创建或更新Django用户
+    - 自动登录用户
+    - 重定向到前端页面
+    
+    **注意：** 此接口通常由Casdoor服务器调用，不需要手动调用
+    """,
+    request=CasdoorCallbackSerializer,
+    responses={
+        302: OpenApiResponse(description="重定向到前端成功/错误页面"),
+        500: OpenApiResponse(description="服务器内部错误")
+    },
+    tags=['用户认证']
+)
 @api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
 def casdoor_callback(request):
@@ -60,7 +126,7 @@ def casdoor_callback(request):
     if not code:
         logger.error("OAuth回调缺少授权码")
         
-        # 重定向到前端错误页面
+
         frontend_url = CasdoorConfig.get_frontend_endpoint()
         error_url = f"{frontend_url}/auth/error?message=缺少授权码"
         
@@ -138,37 +204,106 @@ def casdoor_callback(request):
         from django.shortcuts import redirect
         return redirect(error_url)
 
-@api_view(['POST'])
-@permission_classes([AllowAny])  # 允许未认证用户调用登出
-def casdoor_logout(request):
-    """登出用户"""
-    try:
-        # 清除Casdoor会话信息
-        CasdoorUtils.clear_user_session(request)
-        
-        # Django登出
-        if request.user.is_authenticated:
-            username = request.user.username
-            django_logout(request)
-            logger.info(f"用户 {username} 登出成功")
-        
-        return Response({
-            'status': 'ok',
-            'message': '登出成功'
-        }, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        logger.error(f"登出失败: {e}")
-        return Response({
-            'status': 'error',
-            'message': f'登出失败: {str(e)}',
-            'code': 'LOGOUT_ERROR'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@extend_schema(
+    summary="用户登出",
+    description="""登出当前用户并清除会话信息。
+    
+    **功能说明：**
+    - 清除Casdoor会话信息
+    - 执行Django登出操作
+    - 允许未认证用户调用
+    """,
+    responses={
+        200: OpenApiResponse(
+            response=LogoutResponseSerializer,
+            description="登出成功"
+        ),
+        500: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="登出失败"
+        )
+    },
+    tags=['用户认证']
+)
+class CasdoorLogoutView(GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = LogoutResponseSerializer
+    
+    def post(self, request):
+        try:
+            CasdoorUtils.clear_user_session(request)
+            if request.user.is_authenticated:
+                username = request.user.username
+                django_logout(request)
+                logger.info(f"用户 {username} 登出成功")
+            
+            return Response({
+                'status': 'ok',
+                'message': '登出成功'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"登出失败: {e}")
+            return Response({
+                'status': 'error',
+                'message': f'登出失败: {str(e)}',
+                'code': 'LOGOUT_ERROR'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+
+casdoor_logout = CasdoorLogoutView.as_view()
+
+@extend_schema(
+    summary="获取当前用户信息",
+    description="""获取当前登录用户的详细信息。
+    
+    **权限要求：** 需要通过Casdoor认证
+    **返回信息：** 包含Django用户信息和Casdoor用户信息
+    """,
+    responses={
+        200: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'status': {'type': 'string', 'example': 'ok'},
+                    'user': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'integer'},
+                            'username': {'type': 'string'},
+                            'email': {'type': 'string'},
+                            'first_name': {'type': 'string'},
+                            'last_name': {'type': 'string'},
+                            'is_staff': {'type': 'boolean'},
+                            'is_superuser': {'type': 'boolean'},
+                            'date_joined': {'type': 'string', 'format': 'date-time'},
+                            'last_login': {'type': 'string', 'format': 'date-time'}
+                        }
+                    },
+                    'casdoor_info': {'type': 'object', 'description': 'Casdoor用户信息'}
+                }
+            },
+            description="成功返回用户信息"
+        ),
+        401: OpenApiResponse(description="未认证"),
+        500: OpenApiResponse(
+            response={
+                'type': 'object',
+                'properties': {
+                    'status': {'type': 'string', 'example': 'error'},
+                    'message': {'type': 'string'},
+                    'code': {'type': 'string', 'example': 'USER_INFO_ERROR'}
+                }
+            },
+            description="获取用户信息失败"
+        )
+    },
+    tags=['用户认证']
+)
 @api_view(['GET'])
 @casdoor_login_required
 def get_user_info(request):
-    """获取当前用户信息"""
     try:
         user = request.user
         casdoor_user_info = CasdoorUtils.get_user_info_from_session(request)
@@ -198,37 +333,85 @@ def get_user_info(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['POST'])
-@casdoor_login_required
-def refresh_token(request):
-    """刷新访问令牌"""
-    try:
-        if CasdoorUtils.refresh_token_if_needed(request):
-            return Response({
-                'status': 'ok',
-                'message': 'Token刷新成功',
-                'access_token': request.session.get('casdoor_access_token')
-            }, status=status.HTTP_200_OK)
-        else:
+@extend_schema(
+    summary="刷新访问令牌",
+    description="""刷新Casdoor访问令牌。
+    
+    **权限要求：** 需要通过Casdoor认证
+    **功能说明：** 检查并刷新过期的访问令牌
+    """,
+    responses={
+        200: OpenApiResponse(
+            response=RefreshTokenResponseSerializer,
+            description="Token刷新成功"
+        ),
+        400: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="Token刷新失败"
+        ),
+        500: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="服务器内部错误"
+        )
+    },
+    tags=['用户认证']
+)
+class RefreshTokenView(GenericAPIView):
+    serializer_class = RefreshTokenResponseSerializer
+    
+    @casdoor_login_required
+    def post(self, request):
+        try:
+            if CasdoorUtils.refresh_token_if_needed(request):
+                return Response({
+                    'status': 'ok',
+                    'message': 'Token刷新成功',
+                    'access_token': request.session.get('casdoor_access_token')
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'status': 'error',
+                    'message': 'Token刷新失败',
+                    'code': 'TOKEN_REFRESH_ERROR'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"刷新token失败: {e}")
             return Response({
                 'status': 'error',
-                'message': 'Token刷新失败',
+                'message': f'刷新token失败: {str(e)}',
                 'code': 'TOKEN_REFRESH_ERROR'
-            }, status=status.HTTP_400_BAD_REQUEST)
-            
-    except Exception as e:
-        logger.error(f"刷新token失败: {e}")
-        return Response({
-            'status': 'error',
-            'message': f'刷新token失败: {str(e)}',
-            'code': 'TOKEN_REFRESH_ERROR'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# 为了保持向后兼容性，保留函数视图的别名
+refresh_token = RefreshTokenView.as_view()
+
+
+@extend_schema(
+    summary="检查认证状态",
+    description="""检查当前用户的认证状态。
+    
+    **功能说明：**
+    - 检查用户是否已通过Casdoor认证
+    - 返回基本用户信息（如果已认证）
+    - 允许未认证用户调用
+    """,
+    responses={
+        200: OpenApiResponse(
+            response=AuthStatusResponseSerializer,
+            description="成功返回认证状态"
+        ),
+        500: OpenApiResponse(
+            response=ErrorResponseSerializer,
+            description="检查认证状态失败"
+        )
+    },
+    tags=['用户认证']
+)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def auth_status(request):
-    """检查认证状态"""
     try:
         is_authenticated = CasdoorUtils.is_authenticated(request)
         
