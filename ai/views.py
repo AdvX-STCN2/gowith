@@ -15,11 +15,11 @@ def GetLLMOutput(system_content,user_content,temperature=1):
     :return: LLM输出
     """
     client = OpenAI(
-        base_url="https://api.ppinfra.com/v3/openai",
-        api_key=config("PIPO_TOKEN"),
+        base_url="https://api.siliconflow.cn/v1/",
+        api_key=config("AI_TOKEN"),
     )
     result = client.chat.completions.create(
-        model="moonshotai/kimi-k2-instruct",
+        model="Pro/deepseek-ai/DeepSeek-V3",
         messages=[
             {"role": "system", "content": system_content},
             {"role": "user", "content": user_content},

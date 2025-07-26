@@ -175,6 +175,9 @@ def casdoor_callback(request):
             from django.shortcuts import redirect
             return redirect(error_url)
         
+        # 打印用户信息（调试用）
+        print(f"用户信息: {user_info}")
+        
         # 获取或创建Django用户
         user, created = CasdoorUtils.get_or_create_user(user_info)
         
@@ -188,7 +191,7 @@ def casdoor_callback(request):
         
         # 获取前端重定向URL
         frontend_url = CasdoorConfig.get_frontend_endpoint()
-        redirect_url = f"{frontend_url}/auth/success"
+        redirect_url = f"{frontend_url}/login/success"
         
         # 重定向到前端
         from django.shortcuts import redirect
@@ -278,7 +281,8 @@ casdoor_logout = CasdoorLogoutView.as_view()
                             'is_staff': {'type': 'boolean'},
                             'is_superuser': {'type': 'boolean'},
                             'date_joined': {'type': 'string', 'format': 'date-time'},
-                            'last_login': {'type': 'string', 'format': 'date-time'}
+                            'last_login': {'type': 'string', 'format': 'date-time'},
+                            'avatar_url': {'type': 'string', 'nullable': True, 'description': '用户头像URL'}
                         }
                     },
                     'casdoor_info': {'type': 'object', 'description': 'Casdoor用户信息'}
@@ -308,6 +312,11 @@ def get_user_info(request):
         user = request.user
         casdoor_user_info = CasdoorUtils.get_user_info_from_session(request)
         
+        # 从Casdoor用户信息中获取头像URL
+        avatar_url = None
+        if casdoor_user_info and 'avatar' in casdoor_user_info:
+            avatar_url = casdoor_user_info['avatar']
+        
         return Response({
             'status': 'ok',
             'user': {
@@ -320,6 +329,7 @@ def get_user_info(request):
                 'is_superuser': user.is_superuser,
                 'date_joined': user.date_joined.isoformat() if user.date_joined else None,
                 'last_login': user.last_login.isoformat() if user.last_login else None,
+                'avatar_url': avatar_url,  # 添加头像URL
             },
             'casdoor_info': casdoor_user_info or {}
         }, status=status.HTTP_200_OK)

@@ -31,12 +31,13 @@ class BuddyRequestCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BuddyRequest
         fields = [
-            'profile', 'event', 'description'
+            'profile', 'event', 'description', 'is_public'
         ]
         extra_kwargs = {
             'profile': {'help_text': '用户档案ID'},
             'event': {'help_text': '活动ID'},
-            'description': {'help_text': '搭子请求描述'}
+            'description': {'help_text': '搭子请求描述'},
+            'is_public': {'help_text': '是否允许别人找搭子'}
         }
     
     def create(self, validated_data):
@@ -76,7 +77,7 @@ class BuddyRequestSerializer(serializers.ModelSerializer):
             'id', 'user', 'user_name', 'profile', 'profile_name', 'profile_location',
             'event', 'event_name', 'description', 
             'current_participants', 
-            'status', 'tags', 'created_at', 'updated_at'
+            'is_public', 'tags', 'created_at', 'updated_at'
         ]
         read_only_fields = ['user', 'created_at', 'updated_at']
     
@@ -106,7 +107,7 @@ class BuddyRequestListSerializer(serializers.ModelSerializer):
         model = BuddyRequest
         fields = [
             'id', 'user_name', 'profile_name', 'profile_location', 'event_name', 
-            'description', 'current_participants', 'status', 'tags', 'created_at'
+            'description', 'current_participants', 'is_public', 'tags', 'created_at'
         ]
     
     @extend_schema_field(OpenApiTypes.STR)

@@ -6,16 +6,9 @@ from .models import BuddyRequest
 class BuddyRequestFilter(django_filters.FilterSet):
     """搭子请求过滤器"""
     
-    activity_type = django_filters.CharFilter(
-        field_name='event__activity_type',
-        lookup_expr='icontains',
-        help_text='按活动类型过滤'
-    )
-    
-    status = django_filters.ChoiceFilter(
-        field_name='status',
-        choices=BuddyRequest.STATUS_CHOICES,
-        help_text='按状态过滤'
+    is_public = django_filters.BooleanFilter(
+        field_name='is_public',
+        help_text='是否允许别人找搭子'
     )
     
     event = django_filters.NumberFilter(
@@ -68,7 +61,7 @@ class BuddyRequestFilter(django_filters.FilterSet):
         if value is True:
             # 返回还有空位的请求
             return queryset.filter(
-                status='open'
+                is_public=True
             )
         elif value is False:
             # 返回已满员的请求
@@ -87,7 +80,7 @@ class BuddyRequestFilter(django_filters.FilterSet):
     class Meta:
         model = BuddyRequest
         fields = [
-            'activity_type', 'status', 'event', 'city',
+            'is_public', 'event', 'city',
             'start_date', 'end_date',
             'has_space', 'tags', 'user', 'profile'
         ]

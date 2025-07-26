@@ -9,7 +9,13 @@ class UserProfile(models.Model):
     name = models.CharField(max_length=20, help_text='档案名称')
     phone = models.CharField(max_length=15, blank=True, null=True, help_text='联系电话')
     contact_info = models.TextField(blank=True, null=True, help_text='联系方式（微信、QQ、邮箱等）')
-    mbti = models.CharField(max_length=8, blank=True, null=True, help_text='MBTI性格类型')
+    MBTI_CHOICES = [
+        ('ISTJ', 'ISTJ'), ('ISFJ', 'ISFJ'), ('INFJ', 'INFJ'), ('INTJ', 'INTJ'),
+        ('ISTP', 'ISTP'), ('ISFP', 'ISFP'), ('INFP', 'INFP'), ('INTP', 'INTP'),
+        ('ESTP', 'ESTP'), ('ESFP', 'ESFP'), ('ENFP', 'ENFP'), ('ENTP', 'ENTP'),
+        ('ESTJ', 'ESTJ'), ('ESFJ', 'ESFJ'), ('ENFJ', 'ENFJ'), ('ENTJ', 'ENTJ'),
+    ]
+    mbti = models.CharField(max_length=4, choices=MBTI_CHOICES, blank=True, null=True, help_text='MBTI性格类型')
     bio = models.TextField(blank=True, null=True, help_text='个人简介')
     avatar_url = models.URLField(blank=True, null=True, help_text='头像URL')
     

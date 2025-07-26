@@ -18,7 +18,7 @@ from .serializers import (
         summary="获取用户档案列表",
         description="""获取当前用户的所有档案列表。
         
-        **功能说明：**
+        功能说明：
         - 仅返回当前登录用户的档案
         - 支持按活跃状态过滤
         - 按创建时间倒序排列
@@ -44,9 +44,9 @@ from .serializers import (
         summary="创建用户档案",
         description="""创建新的用户档案。
         
-        **权限要求：** 需要登录
-        **自动设置：** 用户为当前登录用户
-        **主档案逻辑：** 如果是用户的第一个档案，自动设为主档案
+        权限要求： 需要登录
+        自动设置： 用户为当前登录用户
+        主档案逻辑： 如果是用户的第一个档案，自动设为主档案
         """,
         request=UserProfileCreateSerializer,
         responses={
@@ -63,7 +63,7 @@ from .serializers import (
         summary="获取档案详情",
         description="""获取指定档案的详细信息。
         
-        **权限要求：** 仅档案所有者可查看
+        权限要求： 仅档案所有者可查看
         """,
         responses={
             200: OpenApiResponse(
@@ -79,7 +79,7 @@ from .serializers import (
         summary="更新档案",
         description="""完整更新档案信息。
         
-        **权限要求：** 仅档案所有者可操作
+        权限要求： 仅档案所有者可操作
         """,
         request=UserProfileCreateSerializer,
         responses={
@@ -97,7 +97,7 @@ from .serializers import (
         summary="部分更新档案",
         description="""部分更新档案信息。
         
-        **权限要求：** 仅档案所有者可操作
+        权限要求： 仅档案所有者可操作
         """,
         request=UserProfileCreateSerializer,
         responses={
@@ -115,8 +115,8 @@ from .serializers import (
         summary="删除档案",
         description="""删除档案。
         
-        **权限要求：** 仅档案所有者可操作
-        **注意：** 无法删除主档案，需先设置其他档案为主档案
+        权限要求： 仅档案所有者可操作
+        注意： 无法删除主档案，需先设置其他档案为主档案
         """,
         responses={
             204: OpenApiResponse(description="档案删除成功"),
@@ -148,12 +148,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         description='''
         获取当前用户的所有激活档案列表。
         
-        **功能特性：**
+        功能特性：
         - 只返回当前用户的档案
         - 只显示激活状态的档案
         - 返回简化的档案信息
         
-        **使用场景：**
+        使用场景：
         - 用户查看自己的所有档案
         - 选择档案进行操作
         ''',
@@ -174,12 +174,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         description='''
         为当前用户创建新的档案。
         
-        **功能特性：**
+        功能特性：
         - 支持同时创建地址信息
         - 自动关联到当前用户
         - 支持设置主档案
         
-        **使用场景：**
+        使用场景：
         - 用户创建新的个人档案
         - 为不同场景创建专用档案
         ''',
@@ -207,12 +207,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         description='''
         获取指定档案的详细信息。
         
-        **功能特性：**
+        功能特性：
         - 返回完整的档案信息
         - 包含地址详细信息
         - 只能访问自己的档案
         
-        **使用场景：**
+        使用场景：
         - 查看档案详情
         - 编辑前获取当前信息
         ''',
@@ -243,12 +243,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         description='''
         更新指定档案的信息。
         
-        **功能特性：**
+        功能特性：
         - 支持部分更新（PATCH）和完整更新（PUT）
         - 只能更新自己的档案
         - 自动更新修改时间
         
-        **使用场景：**
+        使用场景：
         - 修改档案信息
         - 更新个人简介
         - 修改联系方式
@@ -282,12 +282,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         description='''
         部分更新指定档案的信息。
         
-        **功能特性：**
+        功能特性：
         - 只更新提供的字段
         - 只能更新自己的档案
         - 自动更新修改时间
         
-        **使用场景：**
+        使用场景：
         - 快速修改单个字段
         - 更新部分信息
         ''',
@@ -320,12 +320,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         description='''
         删除指定的档案（软删除）。
         
-        **功能特性：**
+        功能特性：
         - 软删除（设置is_active=False）
         - 只能删除自己的档案
         - 不能删除主档案（如果是唯一档案）
         
-        **使用场景：**
+        使用场景：
         - 删除不需要的档案
         - 清理过期档案
         ''',
@@ -368,12 +368,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         summary="设置主档案",
         description="""将指定档案设置为主档案。
         
-        **功能说明：**
+        功能说明：
         - 将当前档案设为主档案
         - 自动取消其他档案的主档案状态
         - 每个用户只能有一个主档案
         
-        **权限要求：** 仅档案所有者可操作
+        权限要求： 仅档案所有者可操作
         """,
         request=None,
         responses={

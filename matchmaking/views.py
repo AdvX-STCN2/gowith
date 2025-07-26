@@ -33,28 +33,21 @@ from .filters import BuddyRequestFilter
         description="""获取搭子请求列表，支持多种过滤条件、搜索和排序功能。
         
         活动过滤参数：活动
-        - activity_type: 按活动类型过滤
-        - status: 按状态过滤（open, matched, expired, cancelled）
+        - is_public: 是否允许别人找搭子
         - event: 按活动ID过滤
         - has_space: 是否有空位
         - tags: 按标签过滤
         
-        活动搜索字段：活动 description, activity_type
+        活动搜索字段：活动 description
         活动排序字段：活动 created_at
         """,
         parameters=[
+
             OpenApiParameter(
-                name='activity_type',
-                type=OpenApiTypes.STR,
+                name='is_public',
+                type=OpenApiTypes.BOOL,
                 location=OpenApiParameter.QUERY,
-                description='按活动类型过滤'
-            ),
-            OpenApiParameter(
-                name='status',
-                type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
-                description='按状态过滤',
-                enum=['open', 'matched', 'expired', 'cancelled']
+                description='是否允许别人找搭子'
             ),
             OpenApiParameter(
                 name='event',
@@ -78,7 +71,7 @@ from .filters import BuddyRequestFilter
                 name='search',
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
-                description='搜索关键词（在描述和活动类型中搜索）'
+                description='搜索关键词（在描述中搜索）'
             ),
             OpenApiParameter(
                 name='ordering',
@@ -206,7 +199,7 @@ class BuddyRequestViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         if self.action == 'list':
-            return self.queryset.filter(status='open')
+            return self.queryset.filter(is_public=True)
         return self.queryset
     
     def perform_create(self, serializer):

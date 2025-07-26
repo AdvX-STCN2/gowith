@@ -55,7 +55,8 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "authentication.middleware.CasdoorCORSMiddleware",  # Casdoor CORS中间件
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    "gowith.middleware.IgnoreCsrfMiddleware",
+    # "django.middleware.csrf.CsrfViewMiddleware",  # CSRF已禁用
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "authentication.middleware.CasdoorTokenMiddleware",  # Casdoor Token中间件
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -261,3 +262,11 @@ CASDOOR_CORS_ALLOWED_ORIGINS = [
 SESSION_COOKIE_AGE = 86400  # 24小时
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# CSRF配置 - 完全禁用CSRF保护
+CSRF_COOKIE_SECURE = False
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_TRUSTED_ORIGINS = ["http://localhost:5173"]
+# 禁用CSRF失败视图检查
+CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'

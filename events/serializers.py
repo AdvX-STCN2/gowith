@@ -31,9 +31,8 @@ class BuddyRequestSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = BuddyRequest
         fields = [
-            'id', 'user_name', 'activity_type', 'description', 
-            'start_time', 'end_time', 'max_participants', 
-            'current_participants', 'status', 'created_at'
+            'id', 'user_name', 'description', 
+            'current_participants', 'is_public', 'created_at'
         ]
     
     @extend_schema_field(OpenApiTypes.INT)
@@ -64,7 +63,7 @@ class EventSerializer(serializers.ModelSerializer):
         model = Event
         fields = [
             'id', 'name', 'start_time', 'end_time', 'location', 'location_detail',
-            'is_online', 'logo_url', 'banner_url', 'introduction', 'creator',
+            'is_online', 'logo_url', 'banner_url', 'introduction', 'description', 'creator',
             'creator_name', 'participant_count', 'buddy_requests', 'created_at'
         ]
         read_only_fields = ['creator', 'created_at']
@@ -89,6 +88,10 @@ class EventSerializer(serializers.ModelSerializer):
             'introduction': {
                 'help_text': '活动介绍和描述（可选）',
                 'style': {'placeholder': '请详细介绍这个活动的内容、目标和特色...'}
+            },
+            'description': {
+                'help_text': '文字描述（可选）',
+                'style': {'placeholder': '请输入活动的详细文字描述...'}
             }
         }
     
@@ -141,7 +144,7 @@ class EventCreateSerializer(serializers.ModelSerializer):
         model = Event
         fields = [
             'name', 'start_time', 'end_time', 'location',
-            'is_online', 'logo_url', 'banner_url', 'introduction'
+            'is_online', 'logo_url', 'banner_url', 'introduction', 'description'
         ]
         extra_kwargs = {
             'name': {
@@ -165,6 +168,11 @@ class EventCreateSerializer(serializers.ModelSerializer):
             'introduction': {
                 'help_text': '活动介绍和描述（可选）',
                 'style': {'placeholder': '请详细介绍这个活动的内容、目标和特色...'},
+                'required': False
+            },
+            'description': {
+                'help_text': '文字描述（可选）',
+                'style': {'placeholder': '请输入活动的详细文字描述...'},
                 'required': False
             }
         }

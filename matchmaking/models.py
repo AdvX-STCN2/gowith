@@ -6,17 +6,12 @@ from profiles.models import UserProfile
 User = get_user_model()
 
 class BuddyRequest(models.Model):
-    STATUS_CHOICES = [
-        ('open', '开放'),
-        ('closed', '关闭'),
-    ]
-    
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='buddy_requests')
     profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='buddy_requests', help_text='使用的用户档案', null=True, blank=True)
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='buddy_requests')
     description = models.TextField(help_text='描述')
 
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open', help_text='状态')
+    is_public = models.BooleanField(default=False, help_text='是否允许别人找搭子')
     celery_task_id = models.CharField(max_length=255, blank=True, null=True, help_text='Celery任务ID')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -28,7 +23,7 @@ class BuddyRequest(models.Model):
             models.Index(fields=['user']),
             models.Index(fields=['profile']),
             models.Index(fields=['event']),
-            models.Index(fields=['status']),
+            models.Index(fields=['is_public']),
         ]
     
     def __str__(self):
@@ -42,7 +37,7 @@ class BuddyRequest(models.Model):
     def can_join(self, user):
         if self.user == user:
             return False
-        if self.status != 'open':
+        if not self.is_public:
             return False
 
         if self.matches.filter(matched_user=user).exists():

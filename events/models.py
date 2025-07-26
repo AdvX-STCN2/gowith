@@ -14,6 +14,7 @@ class Event(models.Model):
     logo_url = models.URLField(blank=True, null=True, help_text='活动Logo URL')
     banner_url = models.URLField(blank=True, null=True, help_text='活动横幅URL')
     introduction = models.TextField(blank=True, null=True, help_text='活动描述')
+    description = models.TextField(blank=True, null=True, help_text='文字描述')
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_events',
                                help_text='活动创建者')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -39,8 +40,7 @@ class Event(models.Model):
     def get_open_buddy_requests(self):
         return self.buddy_requests.filter(status='open')
     
-    def get_buddy_requests_by_activity_type(self, activity_type):
-        return self.buddy_requests.filter(activity_type=activity_type)
+
     
     def has_buddy_request_from_user(self, user):
         return self.buddy_requests.filter(user=user).exists()
