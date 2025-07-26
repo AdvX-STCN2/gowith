@@ -210,12 +210,14 @@ class EventViewSet(viewsets.ModelViewSet):
     
     @extend_schema(
         summary="获取活动的搭子请求",
-        description="""获取指定活动的所有搭子请求列表。
+        description="""获取指定活动下当前用户创建的搭子请求列表。
         
         **功能说明：**
-        - 返回该活动下所有的搭子请求
+        - 仅返回当前用户在该活动下创建的搭子请求
         - 包含请求者信息、状态、参与人数等
         - 按创建时间倒序排列
+        
+        **权限要求：** 需要登录
         """,
         responses={
             200: OpenApiResponse(
@@ -229,8 +231,10 @@ class EventViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='buddy-requests')
     def buddy_requests(self, request, pk=None):
         event = self.get_object()
+        # 只返回当前用户在该活动下创建的搭子请求
         buddy_requests = BuddyRequest.objects.filter(
-            event=event
+            event=event,
+            user=request.user
         ).select_related('user').order_by('-created_at')
         
         serializer = BuddyRequestSimpleSerializer(buddy_requests, many=True)

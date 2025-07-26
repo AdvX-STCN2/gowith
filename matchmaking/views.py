@@ -29,17 +29,20 @@ from .filters import BuddyRequestFilter
 
 @extend_schema_view(
     list=extend_schema(
-        summary="获取搭子请求列表",
-        description="""获取搭子请求列表，支持多种过滤条件、搜索和排序功能。
+        summary="获取当前用户的搭子请求列表",
+        description="""获取当前用户创建的搭子请求列表，支持多种过滤条件、搜索和排序功能。
         
-        活动过滤参数：活动
+        **权限要求：** 需要登录
+        **返回范围：** 仅返回当前用户创建的搭子请求
+        
+        过滤参数：
         - is_public: 是否允许别人找搭子
         - event: 按活动ID过滤
         - has_space: 是否有空位
         - tags: 按标签过滤
         
-        活动搜索字段：活动 description
-        活动排序字段：活动 created_at
+        搜索字段：description
+        排序字段：created_at
         """,
         parameters=[
 
@@ -199,7 +202,8 @@ class BuddyRequestViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         if self.action == 'list':
-            return self.queryset.filter(is_public=True)
+            # 只返回当前用户创建的搭子请求
+            return self.queryset.filter(user=self.request.user)
         return self.queryset
     
     def perform_create(self, serializer):
