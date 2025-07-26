@@ -26,10 +26,6 @@ class Address(models.Model):
             models.Index(fields=['province', 'city']),
             models.Index(fields=['city', 'district']),
         ]
-
-        unique_together = [
-            ('country', 'province', 'city', 'district')
-        ]
     
     def __str__(self):
         return self.get_full_address()

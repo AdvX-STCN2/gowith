@@ -36,9 +36,14 @@ def process_buddy_request_matching(self, request_id):
         self.update_state(state='PROGRESS', meta={'progress': 10, 'message': '开始处理匹配请求...'})
         
         # 获取搭子请求
-        buddy_request = BuddyRequest.objects.select_related(
-            'user', 'event'
-        ).get(id=request_id)
+        try:
+            buddy_request = BuddyRequest.objects.select_related(
+                'user', 'event'
+            ).get(id=request_id)
+        except BuddyRequest.DoesNotExist:
+            logger.warning(f"搭子请求 {request_id} 不存在")
+            self.update_state(state='FAILURE', meta={'progress': 0, 'message': '搭子请求不存在'})
+            return "搭子请求不存在，跳过匹配"
         
         # 获取用户档案
         user_profile = UserProfile.objects.filter(

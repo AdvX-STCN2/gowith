@@ -99,7 +99,9 @@ nCCJHBcAyFnm1hdvdwEdH33jDBjNB6ciotJZrf/3VYaIWSalADosHAgMWfXuWP+h
     @classmethod
     def get_redirect_uri(cls, request) -> str:
         """获取重定向URI"""
-        return request.build_absolute_uri('/auth/callback/')
+        # 使用前端地址构建回调URI，而不是后端地址
+        frontend_endpoint = cls.get_frontend_endpoint()
+        return f"{frontend_endpoint}/auth/callback"
     
     @classmethod
     def get_logout_redirect_uri(cls, request) -> str:

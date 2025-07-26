@@ -109,10 +109,8 @@ class EventListSerializer(serializers.ModelSerializer):
         read_only=True,
         help_text='活动创建者用户名'
     )
-    location_city = serializers.CharField(
-        source='location.city', 
-        read_only=True,
-        help_text='活动所在城市'
+    location_address = serializers.SerializerMethodField(
+        help_text='活动完整地址'
     )
     participant_count = serializers.SerializerMethodField(
         help_text='参与者数量'
@@ -121,7 +119,7 @@ class EventListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = [
-            'id', 'name', 'start_time', 'end_time', 'location_city',
+            'id', 'name', 'start_time', 'end_time', 'location_address',
             'is_online', 'logo_url', 'creator_name', 'participant_count', 'created_at'
         ]
         extra_kwargs = {
@@ -134,16 +132,23 @@ class EventListSerializer(serializers.ModelSerializer):
             'created_at': {'help_text': '创建时间'}
         }
     
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_location_address(self, obj):
+        if obj.location:
+            return obj.location.get_full_address()
+        return None
+    
     @extend_schema_field(OpenApiTypes.INT)
     def get_participant_count(self, obj):
         return obj.get_participant_count()
 
 class EventCreateSerializer(serializers.ModelSerializer):
+    location_data = AddressSerializer(required=False, help_text='新建地点信息（可选，如果提供则会创建新地点）')
     
     class Meta:
         model = Event
         fields = [
-            'name', 'start_time', 'end_time', 'location',
+            'id', 'name', 'start_time', 'end_time', 'location', 'location_data',
             'is_online', 'logo_url', 'banner_url', 'introduction', 'description'
         ]
         extra_kwargs = {
@@ -153,7 +158,7 @@ class EventCreateSerializer(serializers.ModelSerializer):
             },
             'start_time': {'help_text': '活动开始时间'},
             'end_time': {'help_text': '活动结束时间'},
-            'location': {'help_text': '活动地点ID（如果是线下活动）', 'required': False},
+            'location': {'help_text': '活动地点ID（如果是线下活动，与location_data二选一）', 'required': False},
             'is_online': {'help_text': '是否为线上活动'},
             'logo_url': {
                 'help_text': '活动Logo图片URL（可选）',
@@ -178,14 +183,42 @@ class EventCreateSerializer(serializers.ModelSerializer):
         }
     
     def create(self, validated_data):
+        location_data = validated_data.pop('location_data', None)
         validated_data['creator'] = self.context['request'].user
+        
+        # 如果提供了location_data，创建新地点
+        if location_data:
+            address, created = Address.get_or_create_address(
+                country=location_data.get('country', '中国'),
+                province=location_data['province'],
+                city=location_data['city'],
+                district=location_data.get('district'),
+                detailed_address=location_data.get('detailed_address'),
+                latitude=location_data.get('latitude'),
+                longitude=location_data.get('longitude')
+            )
+            validated_data['location'] = address
+        
         return super().create(validated_data)
     
     def validate(self, data):
         if data['start_time'] >= data['end_time']:
             raise serializers.ValidationError("活动开始时间必须早于结束时间")
         
-        if not data['is_online'] and not data.get('location'):
-            raise serializers.ValidationError("线下活动必须指定地点")
+        location = data.get('location')
+        location_data = data.get('location_data')
+        is_online = data.get('is_online', False)
+        
+        if not is_online:
+            if not location and not location_data:
+                raise serializers.ValidationError("线下活动必须指定地点（location）或提供新地点信息（location_data）")
+            
+            if location and location_data:
+                raise serializers.ValidationError("不能同时指定现有地点（location）和新地点信息（location_data）")
+            
+            # 如果提供了location_data，验证必需字段
+            if location_data:
+                if not location_data.get('province') or not location_data.get('city'):
+                    raise serializers.ValidationError("新建地点必须包含省份和城市信息")
         
         return data
